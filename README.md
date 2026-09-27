@@ -5,6 +5,16 @@ Aplikasi web-nya dibungkus jadi APK native supaya bisa jalan fullscreen di HP + 
 
 > Source code web-nya ada di repo terpisah: [Rochwidias/notedwork](https://github.com/Rochwidias/notedwork)
 
+## Download (user Android)
+
+Langsung download APK terbaru di halaman release:
+
+**[⬇ Download notedwork-v1.0.0.apk](https://github.com/Rochwidias/notedwork-app/releases/latest)**
+
+1. Download file `.apk` di HP
+2. Buka file-nya → izinkan "install dari sumber tak dikenal" kalau diminta
+3. Install → buka → login pakai akun Google
+
 ## Struktur folder
 
 ```
