@@ -1,0 +1,45 @@
+# ===== Build outputs (jangan commit, bisa rebuild) =====
+*.apk
+*.aab
+*.ap_
+*.dex
+# jar hasil compile prototipe / gradle (kecuali gradle wrapper)
+*.jar
+!apk/android/gradle/wrapper/gradle-wrapper.jar
+**/build/
+.kotlin/
+
+# ===== Node / Capacitor =====
+apk/node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# ===== Data runtime prototipe CLI =====
+notes.txt
+
+# ===== Python (make-icons.py) =====
+__pycache__/
+*.pyc
+
+# ===== Gradle / Android Studio =====
+.gradle/
+apk/android/.gradle/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# ===== IntelliJ IDEA =====
+.idea/caches/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+*.iws
+
+# ===== Debug artifacts (screenshot emulator + dump UI, lokal saja) =====
+apk/*.png
+apk/ui-*.xml
+
+# ===== OS =====
+Thumbs.db
+.DS_Store
