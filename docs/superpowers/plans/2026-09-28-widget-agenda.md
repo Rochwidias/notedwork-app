@@ -47,8 +47,8 @@
 - Test: `test/core/agenda_payload_test.dart`
 
 **Interfaces:**
-- Consumes: `Sched`, `Routine`, `Task` dari `lib/core/models.dart` (field: Sched.date/time/endTime/allDay/title/color/reminderMin; Routine.day(1=Sen..7=Min)/start/end/course/lect/room/color; Task.date/time/prio/title/matkul/done); `todayStr()` dari `lib/core/dates.dart`.
-- Produces (dipakai Task 2): `String buildAgendaPayload({required List<Sched> scheds, required List<Routine> routines, required List<Task> tasks, required DateTime now, required String header, required String emptyText})` — mengembalikan JSON string.
+- Consumes: `Sched`, `Routine`, `Task` dari `lib/core/models.dart` — SEMUA field wajib diverifikasi di models.dart: `Sched(id,title,date,time,note,color,reminderMin?,endTime?,allDay?,overnight?)` — **`note` required dan `color` bertipe `String` (`'#RRGGBB'`)**; `Routine(id,course,day,start,end,room,lect,color)` — `color` String, `day` 1=Senin..7=Minggu; `Task(id,matkul,title,date,time,prio,note,done,reminderMin?)` — **`note` required, TIDAK ada field `color`** (pakai `'#DC2626'` untuk deadline).
+- Produces (dipakai Task 2): `String buildAgendaPayload({required List<Sched> scheds, required List<Routine> routines, required List<Task> tasks, required DateTime now, required String header, required String emptyText})` — mengembalikan JSON string. `todayStr()` TIDAK menerima argumen — pakai helper `iso()` lokal dengan parameter `now` (lihat implementasi).
 
 - [ ] **Step 1: Tulis tes yang gagal dahulu**
 
@@ -61,11 +61,25 @@ import 'package:notedwork/core/widget/agenda_payload.dart';
 
 void main() {
   final now = DateTime(2026, 9, 28); // Senin
-  String run({List<Sched> scheds = const [], List<Routine> routines = const [], List<Task> tasks = const []}) =>
-      buildAgendaPayload(scheds: scheds, routines: routines, tasks: tasks, now: now,
-        header: 'Hari Ini · Sen, 28 Sep 2026', emptyText: 'Belum ada agenda hari ini');
 
-  test('payload JSON valid, berisi header + emptyText + items', () {
+  Sched sched({String id = 's1', required String title, required String date,
+          String time = '10:00', String color = '#D97706'}) =>
+      Sched(id: id, title: title, date: date, time: time, note: '', color: color);
+  Routine routine({String id = 'r1', required int day, String start = '07:00',
+          String end = '08:30', String course = 'Kalkulus', String color = '#16A34A'}) =>
+      Routine(id: id, course: course, day: day, start: start, end: end,
+          room: 'A1', lect: 'Dosen', color: color);
+  Task task({String id = 't1', required String title, required String date,
+          String time = '', bool done = false, Prio prio = Prio.low}) =>
+      Task(id: id, matkul: 'MTK', title: title, date: date, time: time,
+          prio: prio, note: '', done: done);
+
+  String run({List<Sched> scheds = const [], List<Routine> routines = const [],
+          List<Task> tasks = const []}) =>
+      buildAgendaPayload(scheds: scheds, routines: routines, tasks: tasks, now: now,
+          header: 'Hari Ini · Sen, 28 Sep 2026', emptyText: 'Belum ada agenda hari ini');
+
+  test('payload JSON valid, berisi header + empty + items', () {
     final map = jsonDecode(run()) as Map<String, dynamic>;
     expect(map['header'], 'Hari Ini · Sen, 28 Sep 2026');
     expect(map['empty'], 'Belum ada agenda hari ini');
@@ -74,28 +88,25 @@ void main() {
 
   test('sched hari ini ikut; lewat horizon 7 hari tidak; kemarin tidak', () {
     final map = jsonDecode(run(scheds: [
-      Sched(id: 's1', title: 'Hari ini', date: '2026-09-28', time: '14:50', color: 0),
-      Sched(id: 's2', title: 'Besok+7', date: '2026-10-05', time: '08:00', color: 1), // batas = now+7
-      Sched(id: 's3', title: 'Lewat', date: '2026-10-06', time: '08:00', color: 2),
-      Sched(id: 's4', title: 'Kemarin', date: '2026-09-27', time: '08:00', color: 3),
+      sched(title: 'Hari ini', date: '2026-09-28'),
+      sched(id: 's2', title: 'Batas', date: '2026-10-05'), // now + 7 hari
+      sched(id: 's3', title: 'Lewat', date: '2026-10-06'),
+      sched(id: 's4', title: 'Kemarin', date: '2026-09-27'),
     ])) as Map<String, dynamic>;
     final titles = (map['items'] as List).map((e) => e['title']).toList();
-    expect(titles, containsAll(['Hari ini', 'Besok+7']));
+    expect(titles, containsAll(['Hari ini', 'Batas']));
     expect(titles, isNot(contains('Lewat')));
     expect(titles, isNot(contains('Kemarin')));
   });
 
   test('sched jam lewat TETAP tampil (perilaku agenda Kalender)', () {
-    final map = jsonDecode(run(scheds: [
-      Sched(id: 's1', title: 'Pagi lewat', date: '2026-09-28', time: '06:00', color: 0),
-    ])) as Map<String, dynamic>;
+    final map = jsonDecode(run(scheds: [sched(title: 'Pagi lewat', date: '2026-09-28', time: '06:00')]))
+        as Map<String, dynamic>;
     expect((map['items'] as List).length, 1);
   });
 
   test('rutin selalu ikut dengan field day ISO (Senin=1)', () {
-    final map = jsonDecode(run(routines: [
-      Routine(id: 'r1', course: 'Kalkulus', day: 1, start: '07:00', end: '08:30', room: 'A1', lect: 'Dosen', color: 0),
-    ])) as Map<String, dynamic>;
+    final map = jsonDecode(run(routines: [routine(day: 1)])) as Map<String, dynamic>;
     final items = (map['items'] as List);
     expect(items.length, 1);
     expect(items.first['kind'], 'routine');
@@ -103,24 +114,25 @@ void main() {
     expect(items.first['date'], isNull);
   });
 
-  test('tugas done DIBUANG, tugas aktif deadline dalam horizon ikut, jam default 23:59', () {
+  test('tugas done DIBUANG, aktif dalam horizon ikut, jam default 23:59', () {
     final map = jsonDecode(run(tasks: [
-      Task(id: 't1', matkul: 'MTK', title: 'Selesai', date: '2026-09-28', time: '', prio: Prio.low, done: true),
-      Task(id: 't2', matkul: 'MTK', title: 'Aktif', date: '2026-09-28', time: '', prio: Prio.high, done: false),
-      Task(id: 't3', matkul: 'MTK', title: 'Jauh', date: '2026-10-20', time: '10:00', prio: Prio.low, done: false),
+      task(title: 'Selesai', date: '2026-09-28', done: true),
+      task(id: 't2', title: 'Aktif', date: '2026-09-28'),
+      task(id: 't3', title: 'Jauh', date: '2026-10-20', time: '10:00'),
     ])) as Map<String, dynamic>;
     final items = (map['items'] as List);
     expect(items.length, 1);
     expect(items.first['title'], 'Aktif');
     expect(items.first['time'], '23:59');
     expect(items.first['kind'], 'task');
+    expect(items.first['color'], '#DC2626');
   });
 
   test('urutan grup: routine -> sched -> task', () {
     final map = jsonDecode(run(
-      tasks: [Task(id: 't', matkul: 'M', title: 'Tugas', date: '2026-09-28', time: '01:00', prio: Prio.low, done: false)],
-      scheds: [Sched(id: 's', title: 'Agenda', date: '2026-09-28', time: '02:00', color: 0)],
-      routines: [Routine(id: 'r', course: 'Rutin', day: 1, start: '23:00', end: '23:59', room: '', lect: '', color: 0)],
+      tasks: [task(title: 'Tugas', date: '2026-09-28', time: '01:00')],
+      scheds: [sched(title: 'Agenda', date: '2026-09-28', time: '02:00')],
+      routines: [routine(day: 1, start: '23:00', end: '23:59')],
     )) as Map<String, dynamic>;
     final kinds = (map['items'] as List).map((e) => e['kind']).toList();
     expect(kinds, ['routine', 'sched', 'task']);
@@ -131,14 +143,13 @@ void main() {
     expect((map['items'] as List), isEmpty);
   });
 
-  test('item sched membawa date/time/color untuk render', () {
-    final map = jsonDecode(run(scheds: [
-      Sched(id: 's1', title: 'X', date: '2026-09-28', time: '14:50', color: 2),
-    ])) as Map<String, dynamic>;
+  test('item sched membawa date/time/color string apa adanya', () {
+    final map = jsonDecode(run(scheds: [sched(title: 'X', date: '2026-09-28', time: '14:50', color: '#DC2626')]))
+        as Map<String, dynamic>;
     final item = (map['items'] as List).first as Map<String, dynamic>;
     expect(item['date'], '2026-09-28');
     expect(item['time'], '14:50');
-    expect(item['color'], '#DC2626'); // hex uppercase dari SchedColors[2] (#dc2626)
+    expect(item['color'], '#DC2626');
   });
 }
 ```
@@ -154,7 +165,6 @@ Expected: FAIL — `Error: Couldn't resolve the package 'package:notedwork/core/
 // lib/core/widget/agenda_payload.dart
 import 'dart:convert';
 import 'package:notedwork/core/models.dart';
-import 'package:notedwork/core/dates.dart';
 
 /// Payload agenda untuk widget layar utama.
 /// Semua pemformatan bahasa (header/emptyText) dilakukan pemanggil.
@@ -166,24 +176,28 @@ String buildAgendaPayload({
   required String header,
   required String emptyText,
 }) {
-  final today = todayStr(now);
-  final horizon = todayStr(now.add(const Duration(days: 7)));
-  String hex(int color) => '#${color.toRadixString(16).padLeft(6, '0').toUpperCase()}';
+  // yyyy-MM-dd lokal; todayStr() di dates.dart tanpa argumen, jadi helper sendiri.
+  String iso(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  final today = iso(now);
+  final horizon = iso(now.add(const Duration(days: 7)));
+  const taskColor = '#DC2626'; // BadgeKind.over / deadline merah (globals.css)
 
   final items = <Map<String, Object?>>[];
 
   // 1) Rutin mingguan (selalu ikut; provider mencocokkan hari)
   for (final r in routines) {
     items.add({'kind': 'routine', 'day': r.day, 'time': r.start, 'end': r.end,
-      'title': r.course, 'color': hex(r.color)});
+      'title': r.course, 'color': r.color.isEmpty ? '#D97706' : r.color});
   }
-  // 2) Sched: hari ini s/d +7 (kemarin ikut terbuang oleh perbandingan)
+  // 2) Sched: hari ini s/d +7 (kemarin terbuang oleh perbandingan)
   final schedsSorted = [...scheds]..sort((a, b) => a.date.compareTo(b.date));
   for (final s in schedsSorted) {
     if (s.date.compareTo(today) < 0) continue;
     if (s.date.compareTo(horizon) > 0) continue;
     items.add({'kind': 'sched', 'date': s.date,
-      'time': (s.allDay ?? false) ? '' : s.time, 'title': s.title, 'color': hex(s.color)});
+      'time': (s.allDay ?? false) ? '' : s.time, 'title': s.title,
+      'color': s.color.isEmpty ? '#D97706' : s.color});
   }
   // 3) Tugas belum selesai, deadline hari ini s/d +7
   final tasksSorted = [...tasks]..sort((a, b) => a.date.compareTo(b.date));
@@ -192,14 +206,15 @@ String buildAgendaPayload({
     if (t.date.compareTo(today) < 0) continue;
     if (t.date.compareTo(horizon) > 0) continue;
     items.add({'kind': 'task', 'date': t.date,
-      'time': (t.time.isEmpty ? '23:59' : t.time), 'title': t.title, 'color': hex(t.color)});
+      'time': (t.time.isEmpty ? '23:59' : t.time), 'title': t.title,
+      'color': taskColor});
   }
 
   return jsonEncode({'header': header, 'empty': emptyText, 'items': items});
 }
 ```
 
-Catatan: `todayStr` mungkin tidak menerima argumen — kalau signature-nya `todayStr()` tanpa parameter, hitung ISO manual: `String iso(DateTime d) => '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';` dan pakai `iso(now)` / `iso(now.add(...))` di atas (hapus `todayStr`). `Task.color` — kalau model Task tidak punya field `color`, pakai warna tugas (deadline) `0xDC2626` tetap, sesuaikan dengan field yang benar-benar ada di `Task` (baca `lib/core/models.dart`); yang penting key JSON `color` selalu string `#RRGGBB`. Sched `color` adalah int index 0..5 → `hex()` di atas menghasilkan heksa dari nilai int mentah; untuk index kecil (0..5) hasilnya salah — **gunakan palet**: `import 'package:notedwork/core/dates.dart'` sudah menyediakan `schedColors`/`routineColors` (List<int> heksa) → `hex(List<int> pal, int i) => '#${pal[i % pal.length].toRadixString(16).padLeft(6, '0').toUpperCase()}'`, jalur: Sched → `schedColors[s.color]`, Routine → `routineColors[r.color]`, Task → `0xDC2626` (deadline merah, lihat BadgeKind.over).
+Catatan: `Sched.color`/`Routine.color` sudah `String` `'#RRGGBB'` → langsung diteruskan (fallback `#D97706` kalau kosong). `Task` tidak punya `color` → selalu `#DC2626`. Sort di dalam grup dilakukan sekali; grup sudah dalam urutan rutin→sched→task.
 
 - [ ] **Step 4: Jalankan tes, pastikan LULUS**
 
@@ -290,7 +305,7 @@ Future<void> _handleWidgetUri(Future<Uri?> future) async {
   if (uri == null) return;
   if (uri.host == 'widget' && uri.path == '/add') {
     if (!mounted) return;
-    showQuickAdd(context, kind: 'sched'); // samakan dengan nilai kind yang dipakai FAB/QuickAdd
+    showQuickAdd(context, kind: 'jadwal'); // kind QuickAdd: 'tugas' | 'jadwal' | 'catatan' (lihat pemakaian existing)
   }
 }
 
