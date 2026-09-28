@@ -33,3 +33,6 @@ Thumbs.db
 
 # Local-only brainstorm session
 .superpowers/
+
+# APK lokal
+*.apk
