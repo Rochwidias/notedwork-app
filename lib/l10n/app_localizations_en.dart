@@ -394,8 +394,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Preview mode — sample data, stored locally on your device';
 
   @override
-  String get tasks_liveSub =>
-      'Real Gmail & Calendar — deadlines also appear on Calendar & Dashboard';
+  String get tasks_liveSub => 'Task deadlines also appear on Calendar';
 
   @override
   String get tasks_filterActive => 'Active';
@@ -429,8 +428,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Preview mode — sample data. Not your real data.';
 
   @override
-  String get cal_liveSub =>
-      'Real Gmail & Calendar — tap a date to see the agenda';
+  String get cal_liveSub => 'Tap a date to see that day\'s agenda';
 
   @override
   String get cal_prevMonth => 'Previous month';

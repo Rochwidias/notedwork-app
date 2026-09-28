@@ -845,7 +845,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasks_liveSub.
   ///
   /// In id, this message translates to:
-  /// **'Gmail & Kalender asli — deadline ikut muncul di Kalender & Dashboard'**
+  /// **'Deadline tugas juga muncul di Kalender'**
   String get tasks_liveSub;
 
   /// No description provided for @tasks_filterActive.
@@ -911,7 +911,7 @@ abstract class AppLocalizations {
   /// No description provided for @cal_liveSub.
   ///
   /// In id, this message translates to:
-  /// **'Gmail & Kalender asli — ketuk tanggal untuk melihat agenda'**
+  /// **'Ketuk tanggal untuk melihat agenda hari itu'**
   String get cal_liveSub;
 
   /// No description provided for @cal_prevMonth.

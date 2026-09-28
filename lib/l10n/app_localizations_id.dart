@@ -396,8 +396,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Mode pratinjau — data contoh, tersimpan lokal di perangkatmu';
 
   @override
-  String get tasks_liveSub =>
-      'Gmail & Kalender asli — deadline ikut muncul di Kalender & Dashboard';
+  String get tasks_liveSub => 'Deadline tugas juga muncul di Kalender';
 
   @override
   String get tasks_filterActive => 'Aktif';
@@ -431,8 +430,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Mode pratinjau — data contoh. Bukan data aslimu.';
 
   @override
-  String get cal_liveSub =>
-      'Gmail & Kalender asli — ketuk tanggal untuk melihat agenda';
+  String get cal_liveSub => 'Ketuk tanggal untuk melihat agenda hari itu';
 
   @override
   String get cal_prevMonth => 'Bulan sebelumnya';

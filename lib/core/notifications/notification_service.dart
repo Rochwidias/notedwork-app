@@ -28,7 +28,7 @@ class NotificationService {
     tz.setLocalLocation(tz.getLocation(defaultTz));
 
     const settings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      android: AndroidInitializationSettings('@drawable/ic_notification'),
     );
     await _plugin.initialize(
       settings: settings,
@@ -47,6 +47,7 @@ class NotificationService {
         _channelId,
         _channelName,
         channelDescription: 'Pengingat jadwal dan tugas Notedwork',
+        icon: 'ic_notification',
         importance: Importance.max,
         priority: Priority.high,
       );
