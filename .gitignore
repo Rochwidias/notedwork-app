@@ -36,3 +36,6 @@ Thumbs.db
 
 # APK lokal
 *.apk
+
+# crash log JVM (Gradle)
+android/hs_err_*.log
