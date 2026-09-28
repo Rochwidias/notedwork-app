@@ -26,11 +26,11 @@ User bisa melihat agenda hari ini langsung dari layar utama Android tanpa membuk
 
 - **Dependency pub**: `home_widget` (satu-satunya tambahan; bridge resmi Flutter↔SharedPreferences↔AppWidgetProvider).
 - **Flutter** — `lib/core/widget/agenda_widget.dart`:
-  - Fungsi murni `buildAgendaPayload({required List<Sched>, required List<Routine>, required List<Task>, required DateTime now, required Lang lang}) → String` (JSON):
+  - Fungsi murni `buildAgendaPayload({required List<Sched> scheds, required List<Routine> routines, required List<Task> tasks, required DateTime now, required String header, required String emptyText}) → String` (JSON):
     - Sched: tanggal `now` s/d +7 hari, belum lewat; field `date, time, endTime, title, color`.
     - Task: `!done`, deadline `date` dalam horizon 7 hari; field `date, time (default 23:59), title, prio`.
     - Rutin: mingguan, field `day (1..7), start, end, title, color` (tanpa tanggal — provider mencocokkan hari).
-    - Header date + empty-text sudah diformat per bahasa di Flutter (provider hanya menampilkan).
+    - `header` (mis. `Hari Ini · Sen, 28 Sep 2026`) dan `emptyText` sudah diformat per bahasa oleh pemanggil (fmtDateID + l10n) — provider hanya menampilkan.
     - Item urut: rutin (jam mulai) → sched → tugas, sama seperti agenda Kalender.
   - `AgendaWidgetBridge.update()` — try/catch: `HomeWidget.saveWidgetData('agenda_payload', json)` + `HomeWidget.updateWidget()`.
 - **Kotlin** — `android/app/src/main/kotlin/app/notedwork/notedwork/AgendaWidgetProvider` extends `es.antonborri.home_widget.HomeWidgetProvider`:
