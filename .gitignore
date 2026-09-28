@@ -1,46 +1,35 @@
-# ===== Build outputs (jangan commit, bisa rebuild) =====
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+
+# Android
+android/.gradle/
+android/local.properties
+android/app/.cxx/
 *.apk
 *.aab
-*.ap_
 *.dex
-# jar hasil compile prototipe / gradle (kecuali gradle wrapper)
-*.jar
-!apk/android/gradle/wrapper/gradle-wrapper.jar
-**/build/
-.kotlin/
-
-# ===== Node / Capacitor =====
-apk/node_modules/
-npm-debug.log*
-yarn-error.log*
-
-# ===== Data runtime prototipe CLI =====
-notes.txt
-
-# ===== Python (make-icons.py) =====
-__pycache__/
-*.pyc
-
-# ===== Gradle / Android Studio =====
-.gradle/
-apk/android/.gradle/
-local.properties
+*.keystore
+*.jks
+key.properties
 captures/
-.externalNativeBuild/
-.cxx/
 
-# ===== IntelliJ IDEA =====
-.idea/caches/
-.idea/workspace.xml
-.idea/vcs.xml
-.idea/tasks.xml
-.idea/usage.statistics.xml
+# IntelliJ / Android Studio
+.idea/
 *.iws
+*.ipr
 
-# ===== Debug artifacts (screenshot emulator + dump UI, lokal saja) =====
-apk/*.png
-apk/ui-*.xml
+# Debug artifacts (screenshot emulator + dump UI, lokal saja)
+*.png.bak
+ui-*.xml
 
-# ===== OS =====
+# OS
 Thumbs.db
 .DS_Store
+
+# Local-only brainstorm session
+.superpowers/
