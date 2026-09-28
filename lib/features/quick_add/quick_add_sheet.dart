@@ -111,8 +111,6 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
         : MaterialLocalizations.of(context).formatCompactDate(parsed);
   }
 
-  bool get _titleOk => _titleCtrl.text.trim().isNotEmpty;
-
   bool get _atFinal => _kind == _Kind.note || _step == 2;
 
   String get _hint => _step == 1
@@ -398,9 +396,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                   errorMaxLines: 2,
                   counterText: '',
                 ),
-                onChanged: (_) {
-                  if (_titleErr != null) setState(() => _titleErr = null);
-                },
+                onChanged: (_) => setState(() => _titleErr = null),
                 onSubmitted: (_) => _next(),
               ),
               if (_kind == _Kind.task) ...[
@@ -618,7 +614,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: FilledButton(
-                    onPressed: (_saving || !_titleOk) ? null : _primary,
+                    onPressed: _saving ? null : _primary,
                     child: Text(
                       _atFinal
                           ? (_saving ? l10n.task_saving : l10n.common_save)

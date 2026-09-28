@@ -8,6 +8,20 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'package:notedwork/core/dates.dart' show defaultTz;
 
+/// Satu rencana penjadwalan pengingat — hasil murni dari
+/// [NotificationService.planSchedule], diuji di test/core.
+class SchedulePlan {
+  const SchedulePlan(this.item, this.fireAt, {required this.soon});
+
+  final ReminderItem item;
+
+  /// Waktu notifikasi dijadwalkan.
+  final DateTime fireAt;
+
+  /// true = jam pengingat sudah lewat, agenda masih datang → beritahu segera.
+  final bool soon;
+}
+
 class NotificationService {
   NotificationService._();
 
@@ -63,6 +77,24 @@ class NotificationService {
     }
   }
 
+  /// Dipanggil saat app dibuka: minta izin hanya jika memang belum diberikan.
+  /// (Pengingat default ON, jadi tanpa langkah ini instalasi baru tidak pernah
+  /// dimintai izin dan semua notifikasi diblokir sistem.)
+  static Future<void> ensureReady() async {
+    if (!_inited) return;
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (android == null) return;
+    final enabled = await android.areNotificationsEnabled();
+    if (enabled != true) {
+      await android.requestNotificationsPermission();
+    }
+    final canExact = await android.canScheduleExactNotifications();
+    if (canExact == false) {
+      await android.requestExactAlarmsPermission();
+    }
+  }
+
   static int _idFor(String raw) {
     var h = 0;
     for (final r in raw.runes) {
@@ -82,25 +114,42 @@ class NotificationService {
     if (!enabled) return;
 
     final now = DateTime.now();
+    for (final p in planSchedule(items, now: now)) {
+      await _plugin.zonedSchedule(
+        id: _idFor(p.item.id),
+        title: p.item.title,
+        body: p.soon ? _soonBody(_eventDateTime(p.item)!) : _bodyFor(p.item, p.fireAt),
+        scheduledDate: tz.TZDateTime.from(p.fireAt, tz.local),
+        notificationDetails: NotificationDetails(android: _details),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: '${p.item.kind == ReminderKind.task ? 'task' : 'sched'}:${p.item.id}',
+      );
+    }
+  }
+
+  /// Logika murni penjadwalan (terpisah dari plugin → bisa diuji):
+  /// - lewati pengingat mati (<=0), agenda yang sudah lewat, dan > [horizonDays];
+  /// - jam pengingat sudah lewat tapi agenda masih datang → [SchedulePlan.soon]
+  ///   (dijadwalkan [sefireAhead] dari sekarang, jangan di-skip senyap).
+  static List<SchedulePlan> planSchedule(
+    List<ReminderItem> items, {
+    required DateTime now,
+    int horizonDays = 30,
+    Duration sefireAhead = const Duration(seconds: 2),
+  }) {
+    final out = <SchedulePlan>[];
     for (final item in items) {
       if (item.reminderMin <= 0) continue;
       final at = _eventDateTime(item);
       if (at == null) continue;
-      final fireAt = at.subtract(Duration(minutes: item.reminderMin));
-      if (!fireAt.isAfter(now)) continue;
-      final daysAhead = fireAt.difference(now).inDays;
-      if (daysAhead > 7) continue;
-
-      await _plugin.zonedSchedule(
-        id: _idFor(item.id),
-        title: item.title,
-        body: _bodyFor(item, fireAt),
-        scheduledDate: tz.TZDateTime.from(fireAt, tz.local),
-        notificationDetails: NotificationDetails(android: _details),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        payload: '${item.kind == ReminderKind.task ? 'task' : 'sched'}:${item.id}',
-      );
+      if (!at.isAfter(now)) continue;
+      var fireAt = at.subtract(Duration(minutes: item.reminderMin));
+      if (fireAt.difference(now).inDays > horizonDays) continue;
+      final soon = !fireAt.isAfter(now);
+      if (soon) fireAt = now.add(sefireAhead);
+      out.add(SchedulePlan(item, fireAt, soon: soon));
     }
+    return out;
   }
 
   static DateTime? _eventDateTime(ReminderItem item) {
@@ -134,6 +183,12 @@ class NotificationService {
       return h == 1 ? '1 jam lagi' : '$h jam lagi';
     }
     return '$mins menit lagi';
+  }
+
+  static String _soonBody(DateTime eventAt) {
+    final hm = '${eventAt.hour.toString().padLeft(2, '0')}:'
+        '${eventAt.minute.toString().padLeft(2, '0')}';
+    return 'Segera dimulai jam $hm';
   }
 
   static Future<void> test() async {

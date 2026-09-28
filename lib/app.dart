@@ -41,6 +41,16 @@ class _NotedworkAppState extends ConsumerState<NotedworkApp> {
       final i = view == null ? -1 : _tabs.indexOf(view);
       if (i >= 0 && mounted) setState(() => _index = i);
     });
+    // Saat pertama buka: minta izin notifikasi (bila belum) + jadwalkan ulang
+    // pengingat. Tanpa ini, instalasi baru tidak pernah dimintai izin dan
+    // resync hanya terjadi kalau data berubah.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (ref.read(settingsProvider).remindersOn) {
+        NotificationService.ensureReady();
+      }
+      _syncReminders();
+    });
   }
 
   @override
@@ -125,14 +135,26 @@ class _Shell extends ConsumerWidget {
       (Icons.calendar_month_outlined, Icons.calendar_month, l10n.nav_calendar),
       (Icons.check_circle_outline, Icons.check_circle, l10n.nav_tasks),
       (Icons.notes_outlined, Icons.notes, l10n.nav_notes),
+      (Icons.person_outline, Icons.person, l10n.nav_settings),
     ];
+
+    // Indeks 4 = Profil (buka Pengaturan sebagai route, tab aktif tidak berubah).
+    void onSelect(int i) {
+      if (i >= 4) {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+        );
+        return;
+      }
+      onIndex(i);
+    }
 
     final body = Row(
       children: [
         if (wide)
           NavigationRail(
             selectedIndex: index,
-            onDestinationSelected: onIndex,
+            onDestinationSelected: onSelect,
             labelType: NavigationRailLabelType.all,
             destinations: [
               for (final (icon, sel, label) in destinations)
@@ -183,7 +205,7 @@ class _Shell extends ConsumerWidget {
           ? null
           : NavigationBar(
               selectedIndex: index,
-              onDestinationSelected: onIndex,
+              onDestinationSelected: onSelect,
               destinations: [
                 for (final (icon, sel, label) in destinations)
                   NavigationDestination(
