@@ -3,10 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:home_widget/home_widget.dart' as hw;
+import 'package:notedwork/core/dates.dart';
 import 'package:notedwork/core/models.dart';
 import 'package:notedwork/core/notifications/notification_service.dart';
 import 'package:notedwork/core/state/state.dart';
 import 'package:notedwork/core/theme/app_theme.dart' as nw_theme;
+import 'package:notedwork/core/widget/agenda_widget.dart';
 import 'package:notedwork/features/calendar/calendar_screen.dart';
 import 'package:notedwork/features/notes/notes_screen.dart';
 import 'package:notedwork/features/quick_add/quick_add_sheet.dart';
@@ -25,6 +28,11 @@ class NotedworkApp extends ConsumerStatefulWidget {
 class _NotedworkAppState extends ConsumerState<NotedworkApp> {
   int _index = 0;
   StreamSubscription<NavTarget>? _tapSub;
+  StreamSubscription<Uri?>? _widgetClicks;
+
+  // Context dari `home:` (di bawah MaterialApp): context State ini berada di
+  // atas MaterialApp sehingga tidak punya Navigator maupun Localizations.
+  BuildContext? _homeCtx;
 
   static const List<ViewName> _tabs = [
     ViewName.beranda,
@@ -50,12 +58,17 @@ class _NotedworkAppState extends ConsumerState<NotedworkApp> {
         NotificationService.ensureReady();
       }
       _syncReminders();
+      _syncAgendaWidget();
+      _handleWidgetUri(hw.HomeWidget.initiallyLaunchedFromHomeWidget());
+      _widgetClicks = hw.HomeWidget.widgetClicked
+          .listen((uri) => _handleWidgetUri(Future.value(uri)));
     });
   }
 
   @override
   void dispose() {
     _tapSub?.cancel();
+    _widgetClicks?.cancel();
     super.dispose();
   }
 
@@ -65,6 +78,32 @@ class _NotedworkAppState extends ConsumerState<NotedworkApp> {
     NotificationService.resync(items, enabled: enabled);
   }
 
+  void _syncAgendaWidget() {
+    final ctx = _homeCtx;
+    if (ctx == null || !mounted) return;
+    final l10n = AppLocalizations.of(ctx);
+    final lang = ref.read(settingsProvider).lang;
+    AgendaWidgetBridge.update(
+      scheds: ref.read(schedsProvider),
+      routines: ref.read(routinesProvider),
+      tasks: ref.read(tasksProvider),
+      now: DateTime.now(),
+      header: '${l10n.nav_home} · ${fmtDateID(todayStr(), lang)}',
+      emptyText: lang == Lang.id
+          ? 'Belum ada agenda hari ini'
+          : 'No agenda for today yet',
+    );
+  }
+
+  Future<void> _handleWidgetUri(Future<Uri?> future) async {
+    final uri = await future;
+    if (uri == null) return;
+    if (uri.host != 'widget' || uri.path != '/add') return;
+    final ctx = _homeCtx;
+    if (ctx == null || !ctx.mounted) return;
+    showQuickAdd(ctx, kind: 'jadwal');
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
@@ -72,10 +111,14 @@ class _NotedworkAppState extends ConsumerState<NotedworkApp> {
 
     ref.listen(settingsProvider, (prev, next) {
       if (prev?.remindersOn != next.remindersOn) _syncReminders();
+      if (prev?.lang != next.lang) _syncAgendaWidget();
     });
     ref.listen(reminderItemsProvider, (prev, next) {
       if (prev != next) _syncReminders();
     });
+    ref.listen(schedsProvider, (_, _) => _syncAgendaWidget());
+    ref.listen(routinesProvider, (_, _) => _syncAgendaWidget());
+    ref.listen(tasksProvider, (_, _) => _syncAgendaWidget());
 
     return MaterialApp(
       title: 'Notedwork',
@@ -98,11 +141,14 @@ class _NotedworkAppState extends ConsumerState<NotedworkApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       home: Builder(
-        builder: (context) => _Shell(
-          index: _index,
-          media: media,
-          onIndex: (i) => setState(() => _index = i),
-        ),
+        builder: (context) {
+          _homeCtx = context;
+          return _Shell(
+            index: _index,
+            media: media,
+            onIndex: (i) => setState(() => _index = i),
+          );
+        },
       ),
     );
   }
