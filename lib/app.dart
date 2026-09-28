@@ -59,9 +59,21 @@ class _NotedworkAppState extends ConsumerState<NotedworkApp> {
       }
       _syncReminders();
       _syncAgendaWidget();
-      _handleWidgetUri(hw.HomeWidget.initiallyLaunchedFromHomeWidget());
-      _widgetClicks = hw.HomeWidget.widgetClicked
-          .listen((uri) => _handleWidgetUri(Future.value(uri)));
+      // Semua panggilan home_widget dibungkus try/catch (stream punya
+      // onError) agar kegagalan plugin hanya ter-catat, bukan unhandled error.
+      try {
+        _handleWidgetUri(hw.HomeWidget.initiallyLaunchedFromHomeWidget());
+      } catch (e) {
+        debugPrint('AgendaWidget launch gagal: $e');
+      }
+      try {
+        _widgetClicks = hw.HomeWidget.widgetClicked.listen(
+          (uri) => _handleWidgetUri(Future.value(uri)),
+          onError: (Object e) => debugPrint('AgendaWidget klik gagal: $e'),
+        );
+      } catch (e) {
+        debugPrint('AgendaWidget listen gagal: $e');
+      }
     });
   }
 
@@ -96,12 +108,16 @@ class _NotedworkAppState extends ConsumerState<NotedworkApp> {
   }
 
   Future<void> _handleWidgetUri(Future<Uri?> future) async {
-    final uri = await future;
-    if (uri == null) return;
-    if (uri.host != 'widget' || uri.path != '/add') return;
-    final ctx = _homeCtx;
-    if (ctx == null || !ctx.mounted) return;
-    showQuickAdd(ctx, kind: 'jadwal');
+    try {
+      final uri = await future;
+      if (uri == null) return;
+      if (uri.host != 'widget' || uri.path != '/add') return;
+      final ctx = _homeCtx;
+      if (ctx == null || !ctx.mounted) return;
+      await showQuickAdd(ctx, kind: 'jadwal');
+    } catch (e) {
+      debugPrint('AgendaWidget proses URI gagal: $e');
+    }
   }
 
   @override
