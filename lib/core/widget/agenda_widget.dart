@@ -17,6 +17,13 @@ class AgendaWidgetBridge {
     required DateTime now,
     required String header,
     required String emptyText,
+    required String dateNum,
+    required String dateDow,
+    required String sub,
+    required String count,
+    required String routineLabel,
+    required String schedLabel,
+    required String taskLabel,
   }) async {
     try {
       final payload = buildAgendaPayload(
@@ -26,6 +33,13 @@ class AgendaWidgetBridge {
         now: now,
         header: header,
         emptyText: emptyText,
+        dateNum: dateNum,
+        dateDow: dateDow,
+        sub: sub,
+        count: count,
+        routineLabel: routineLabel,
+        schedLabel: schedLabel,
+        taskLabel: taskLabel,
       );
       await HomeWidget.saveWidgetData(payloadKey, payload);
       await HomeWidget.updateWidget(

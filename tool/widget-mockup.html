@@ -1,0 +1,460 @@
+<title>Widget Agenda Notedwork</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: halaman ulasan mockup — kontrol di atas, tiga varian widget di bingkai HP */
+:root{
+  --bg:#F7F4EE; --fg:#292524; --muted:#78716C; --card:#FFFFFF; --line:#E8E1D4;
+  --accent:#B45309; --accent-soft:#FEF3C7; --ink-on-accent:#FFFFFF;
+  --page-max:1080px; --radius:18px;
+  --font-body:'Poppins',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1C1917; --fg:#F7F4EE; --muted:#A8A29E; --card:#292524; --line:#44403C;
+    --accent:#FBBF24; --accent-soft:#453008; --ink-on-accent:#1C1917;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1C1917; --fg:#F7F4EE; --muted:#A8A29E; --card:#292524; --line:#44403C;
+  --accent:#FBBF24; --accent-soft:#453008; --ink-on-accent:#1C1917;
+  color-scheme:dark;
+}
+body{background:var(--bg); color:var(--fg); font-family:var(--font-body); padding-block:32px; padding-inline:16px;}
+.wrap{max-width:var(--page-max); margin-inline:auto; display:flex; flex-direction:column; gap:28px;}
+.page-head{display:flex; flex-direction:column; gap:8px; max-width:70ch;}
+.eyebrow{font-family:var(--font-mono); font-size:12px; color:var(--accent); letter-spacing:.08em;}
+h1{font-size:clamp(28px,4vw,44px); line-height:1.05; margin:0; text-wrap:balance; letter-spacing:-.02em;}
+.lede{color:var(--muted); font-size:15px; line-height:1.6; margin:0; max-width:68ch;}
+.controls{display:flex; flex-wrap:wrap; gap:12px; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px;}
+.controls fieldset{border:0; padding:0; margin:0; display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+.controls legend{font-family:var(--font-mono); font-size:11px; color:var(--muted); padding:0; margin-right:4px;}
+.seg{border:1px solid var(--line); background:transparent; color:var(--fg); border-radius:999px; padding:7px 14px; font:inherit; font-size:13px; font-weight:500; cursor:pointer;}
+.seg[aria-pressed="true"]{background:var(--fg); color:var(--bg); border-color:var(--fg);}
+.seg:focus-visible, a:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+.variants{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px;}
+.variant{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; display:flex; flex-direction:column; gap:14px; min-width:0;}
+.variant-head{display:flex; flex-direction:column; gap:4px;}
+.variant-name{font-weight:700; font-size:17px; margin:0; display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+.badge{font-family:var(--font-mono); font-size:10.5px; font-weight:700; background:var(--accent); color:var(--ink-on-accent); border-radius:999px; padding:3px 9px;}
+.badge.ghost{background:transparent; color:var(--muted); border:1px solid var(--line);}
+.variant-desc{font-size:13px; color:var(--muted); line-height:1.55; margin:0;}
+.phone{border-radius:26px; padding:22px 14px 18px; min-height:380px; display:flex; flex-direction:column; gap:14px; border:1px solid var(--line);}
+.wall-dark{background:radial-gradient(120% 90% at 80% 0%,#2B3A55 0%,#131A26 45%,#0B0E14 100%);}
+.wall-light{background:linear-gradient(160deg,#F1EAD9 0%,#E3D7BE 55%,#CFC0A0 100%);}
+.wall-foto{background:linear-gradient(180deg,#7C9BB5 0%,#B7C9D4 34%,#E8DCC3 62%,#8A7B5C 100%);}
+.phone-label{font-family:var(--font-mono); font-size:10.5px; color:rgba(255,255,255,.75); text-align:center;}
+.wall-light .phone-label{color:rgba(41,37,36,.6);}
+.dock{display:flex; gap:10px; justify-content:center; margin-top:auto;}
+.dock i{width:38px; height:38px; border-radius:11px; background:rgba(255,255,255,.28); border:1px solid rgba(255,255,255,.35); display:block;}
+.wall-light .dock i{background:rgba(255,255,255,.55);}
+/* ===== Widget A: Fokus Hari Ini (dark) ===== */
+.wa{background:#16130F; border:1px solid rgba(255,255,255,.09); border-radius:20px; padding:14px 14px 8px; color:#F7F4EE; font-family:var(--font-body);}
+.wa-top{display:flex; align-items:center; gap:10px;}
+.wa-date{min-width:46px; text-align:center; background:rgba(217,119,6,.18); border:1px solid rgba(217,119,6,.45); border-radius:12px; padding:6px 4px;}
+.wa-date b{display:block; font-size:19px; line-height:1; font-weight:700;}
+.wa-date span{font-family:var(--font-mono); font-size:9.5px; color:#FBBF24; letter-spacing:.06em;}
+.wa-title{flex:1; min-width:0;}
+.wa-title b{display:block; font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.wa-title span{font-size:11px; color:#A8A29E;}
+.wa-count{font-family:var(--font-mono); font-size:10.5px; font-weight:700; background:#D97706; color:#fff; border-radius:999px; padding:4px 9px; white-space:nowrap;}
+.wa-add{width:32px; height:32px; border-radius:50%; background:#D97706; color:#fff; font-size:19px; line-height:1; border:0; flex:none;}
+.wa-rows{display:flex; flex-direction:column; margin-top:8px;}
+.wa-row{display:flex; align-items:center; gap:9px; padding:8px 9px; border-radius:12px;}
+.wa-row + .wa-row{border-top:1px solid rgba(247,244,238,.08);}
+.wa-row.next{background:rgba(217,119,6,.17); border-top-color:transparent;}
+.wa-row.next + .wa-row{border-top-color:transparent;}
+.wa-dot{width:8px; height:8px; border-radius:50%; flex:none;}
+.wa-time{font-family:var(--font-mono); font-size:11.5px; color:#A8A29E; min-width:38px;}
+.wa-row.next .wa-time{color:#FBBF24; font-weight:700;}
+.wa-task{flex:1; min-width:0; font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.wa-kind{font-family:var(--font-mono); font-size:9px; color:#A8A29E; border:1px solid rgba(168,162,158,.4); border-radius:5px; padding:2px 5px; flex:none;}
+.wa-foot{font-family:var(--font-mono); font-size:9.5px; color:rgba(168,162,158,.8); text-align:center; padding:7px 0 3px;}
+.wa-empty{padding:16px 10px 12px; text-align:center; font-size:12.5px; color:#A8A29E; line-height:1.6;}
+/* ===== Widget B: Linimasa (light) ===== */
+.wb{background:#FFFDF7; border:1px solid #E3D9C4; border-radius:18px; padding:14px 14px 8px; color:#292524; font-family:var(--font-body);}
+.wb-top{display:flex; align-items:baseline; gap:8px;}
+.wb-top b{font-size:14px; font-weight:700;}
+.wb-top span{font-family:var(--font-mono); font-size:10.5px; color:#78716C;}
+.wb-add{margin-left:auto; width:30px; height:30px; border-radius:50%; border:1.5px solid #292524; background:transparent; color:#292524; font-size:17px; line-height:1; flex:none; cursor:pointer;}
+.wb-rows{position:relative; margin-top:10px; display:flex; flex-direction:column;}
+.wb-rows::before{content:""; position:absolute; left:5px; top:14px; bottom:14px; width:2px; background:#E8E1D4; border-radius:2px;}
+.wb-row{position:relative; display:flex; gap:10px; align-items:flex-start; padding:7px 4px 7px 0;}
+.wb-dot{width:12px; height:12px; border-radius:50%; border:2.5px solid #FFFDF7; outline:2px solid currentColor; flex:none; margin-top:2px; z-index:1;}
+.wb-time{font-family:var(--font-mono); font-size:11px; font-weight:700; min-width:38px; padding-top:1px;}
+.wb-task{min-width:0; flex:1;}
+.wb-task b{display:block; font-size:12.8px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.wb-task span{font-size:11px; color:#78716C;}
+.wb-foot{font-family:var(--font-mono); font-size:9.5px; color:#A8A29E; text-align:center; padding:7px 0 3px;}
+.wb-empty{padding:14px 8px; text-align:center; font-size:12.5px; color:#78716C;}
+/* ===== Widget C: Ringkas (dark compact) ===== */
+.wc{background:#101319; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:11px 12px 6px; color:#F7F4EE; font-family:var(--font-body);}
+.wc-top{display:flex; align-items:center; gap:8px;}
+.wc-top b{font-size:12.5px; font-weight:600; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.wc-add{width:28px; height:28px; border-radius:9px; background:rgba(217,119,6,.2); border:1px solid rgba(217,119,6,.5); color:#FBBF24; font-size:16px; line-height:1; flex:none;}
+.wc-rows{display:flex; flex-direction:column; margin-top:6px;}
+.wc-row{display:flex; align-items:center; gap:8px; padding:6px 2px; border-top:1px solid rgba(247,244,238,.07);}
+.wc-row:first-child{border-top:0;}
+.wc-bar{width:3px; align-self:stretch; border-radius:3px; flex:none;}
+.wc-time{font-family:var(--font-mono); font-size:11px; color:#A8A29E; min-width:38px;}
+.wc-task{flex:1; min-width:0; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.wc-tag{font-family:var(--font-mono); font-size:8.5px; font-weight:700; border-radius:5px; padding:2px 6px; flex:none; letter-spacing:.04em;}
+.wc-foot{font-family:var(--font-mono); font-size:9px; color:rgba(168,162,158,.75); text-align:center; padding:6px 0 2px;}
+.wc-empty{padding:12px 8px; text-align:center; font-size:12px; color:#A8A29E;}
+/* ===== Widget D: Kartu Kertas (paper editorial) ===== */
+.wd{background:#FBF7EC; border:1px solid #D9CFB6; border-radius:6px; padding:0; color:#292524; font-family:var(--font-body); overflow:hidden;}
+.wd-rule{height:5px; background:repeating-linear-gradient(90deg,#16A34A 0 34px,#D97706 34px 68px,#7C5CFF 68px 102px,#DC2626 102px 136px);}
+.wd-body{padding:12px 14px 6px;}
+.wd-kicker{font-family:var(--font-mono); font-size:9.5px; letter-spacing:.14em; color:#B45309; font-weight:700;}
+.wd-title{display:flex; align-items:baseline; gap:8px; margin-top:2px;}
+.wd-title b{font-size:19px; font-weight:700; letter-spacing:-.01em;}
+.wd-title span{font-family:var(--font-mono); font-size:10.5px; color:#78716C;}
+.wd-add{margin-left:auto; width:28px; height:28px; border-radius:50%; background:#292524; color:#FBF7EC; font-size:16px; line-height:1; border:0; flex:none;}
+.wd-rows{display:flex; flex-direction:column; margin-top:8px;}
+.wd-row{display:flex; align-items:baseline; gap:8px; padding:7px 0; border-top:1px solid #E4DAC2;}
+.wd-row:first-child{border-top:0;}
+.wd-num{font-family:var(--font-mono); font-size:10px; font-weight:700; color:#B45309; min-width:16px;}
+.wd-task{flex:1; min-width:0; font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.wd-meta{font-family:var(--font-mono); font-size:10px; color:#78716C; flex:none;}
+.wd-foot{font-family:var(--font-mono); font-size:9px; color:#A8A29E; text-align:center; padding:6px 0 4px; letter-spacing:.1em;}
+.wd-empty{padding:14px 8px; text-align:center; font-size:12.5px; color:#78716C; line-height:1.6;}
+/* ===== Widget E: Sinyal Berikutnya (now/next) ===== */
+.we{background:#0D1526; border:1px solid rgba(125,211,252,.22); border-radius:20px; padding:14px 14px 8px; color:#F7F4EE; font-family:var(--font-body);}
+.we-live{display:flex; align-items:center; gap:7px; font-family:var(--font-mono); font-size:9.5px; letter-spacing:.12em; color:#7DD3FC; font-weight:700;}
+.we-live i{width:7px; height:7px; border-radius:50%; background:#38BDF8; display:block;}
+.we-now{margin-top:8px; background:rgba(56,189,248,.1); border:1px solid rgba(56,189,248,.35); border-radius:14px; padding:10px 12px; display:flex; gap:10px; align-items:center;}
+.we-now .we-time{font-family:var(--font-mono); font-size:20px; font-weight:700; color:#7DD3FC; min-width:0;}
+.we-now .we-task{flex:1; min-width:0;}
+.we-now .we-task b{display:block; font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.we-now .we-task span{font-size:11px; color:#A8A29E;}
+.we-next{display:flex; flex-direction:column; margin-top:6px;}
+.we-row{display:flex; align-items:center; gap:8px; padding:6px 4px;}
+.we-row + .we-row{border-top:1px solid rgba(247,244,238,.07);}
+.we-time{font-family:var(--font-mono); font-size:11px; color:#A8A29E; min-width:38px;}
+.we-task{flex:1; min-width:0; font-size:12.5px; color:#D6D3D1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.we-more{font-family:var(--font-mono); font-size:10px; color:#7DD3FC; text-align:center; padding:5px 0 2px;}
+.we-add{width:32px; height:32px; border-radius:50%; background:#38BDF8; color:#0D1526; font-size:18px; font-weight:700; line-height:1; border:0; flex:none;}
+.we-top{display:flex; align-items:center; gap:8px;}
+.we-top .sp{flex:1;}
+.we-foot{font-family:var(--font-mono); font-size:9px; color:rgba(168,162,158,.7); text-align:center; padding:6px 0 2px;}
+.we-empty{padding:14px 8px; text-align:center; font-size:12.5px; color:#A8A29E; line-height:1.6;}
+/* ===== Widget F: Papan Tulis (chalkboard) ===== */
+.wf{background:#292524; border:1px solid rgba(247,244,238,.14); border-radius:16px; padding:13px 14px 7px; color:#F7F4EE; font-family:var(--font-body);}
+.wf-top{display:flex; align-items:center; gap:9px; border-bottom:2px dashed rgba(247,244,238,.25); padding-bottom:9px;}
+.wf-chalk{font-family:var(--font-mono); font-size:10px; color:#F7F4EE; border:1.5px solid rgba(247,244,238,.5); border-radius:8px; padding:5px 8px; text-align:center; line-height:1.3; flex:none;}
+.wf-chalk b{display:block; font-size:15px;}
+.wf-head{flex:1; min-width:0;}
+.wf-head b{display:block; font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.wf-head span{font-family:var(--font-mono); font-size:10px; color:#D6D3D1;}
+.wf-add{width:30px; height:30px; border-radius:50%; border:1.5px dashed rgba(247,244,238,.55); background:transparent; color:#F7F4EE; font-size:17px; line-height:1; flex:none;}
+.wf-rows{display:flex; flex-direction:column; margin-top:4px;}
+.wf-row{display:flex; align-items:center; gap:9px; padding:7px 2px;}
+.wf-check{width:15px; height:15px; border-radius:50%; border:1.5px solid rgba(247,244,238,.45); flex:none;}
+.wf-check.done{background:#16A34A; border-color:#16A34A;}
+.wf-task{flex:1; min-width:0; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.wf-task small{display:block; font-family:var(--font-mono); font-size:9.5px; color:#A8A29E;}
+.wf-time{font-family:var(--font-mono); font-size:11px; color:#FBBF24; flex:none;}
+.wf-foot{font-family:var(--font-mono); font-size:9px; color:rgba(168,162,158,.7); text-align:center; padding:6px 0 2px;}
+.wf-empty{padding:12px 8px; text-align:center; font-size:12.5px; color:#A8A29E; line-height:1.6;}
+.spec{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; display:flex; flex-direction:column; gap:10px;}
+.spec h2, .impl h2{font-size:17px; margin:0;}
+.spec ul, .impl ol{margin:0; padding-left:20px; font-size:13.5px; line-height:1.7; color:var(--fg);}
+.spec li::marker{color:var(--accent);}
+.spec small, .variant small{color:var(--muted); font-size:12px; line-height:1.6;}
+.delta{font-size:12.5px; line-height:1.65; background:var(--bg); border:1px dashed var(--line); border-radius:12px; padding:10px 12px;}
+.delta b{font-weight:600;}
+.delta code{font-family:var(--font-mono); font-size:11.5px;}
+.impl{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px;}
+footer.note{color:var(--muted); font-size:12.5px; line-height:1.6;}
+@media (prefers-reduced-motion: reduce){*{transition:none !important;}}
+</style>
+
+<div class="wrap">
+  <header class="page-head">
+    <span class="eyebrow">Notedwork · home widget · mockup redesain</span>
+    <h1>Enam wajah baru widget agenda</h1>
+    <p class="lede">Widget sekarang: kartu gelap, header satu baris, 5 baris titik–jam–judul. Di bawah ini enam arah redesain — <b>A–C</b> iterasi aman dari yang ada, <b>D–F</b> arah baru yang lebih berani — semuanya <b>bisa dibangun dengan RemoteViews</b> (tanpa blur, tanpa font custom, tanpa shadow). Ganti tombol di atas untuk melihatnya di wallpaper berbeda dan dengan isi berbeda.</p>
+  </header>
+
+  <div class="controls" role="group" aria-label="Kontrol pratinjau">
+    <fieldset>
+      <legend>Wallpaper</legend>
+      <button class="seg" data-wall="wall-dark" aria-pressed="true">Gelap</button>
+      <button class="seg" data-wall="wall-light" aria-pressed="false">Terang</button>
+      <button class="seg" data-wall="wall-foto" aria-pressed="false">Foto</button>
+    </fieldset>
+    <fieldset>
+      <legend>Isi agenda</legend>
+      <button class="seg" data-fill="rame" aria-pressed="true">Rame · 5</button>
+      <button class="seg" data-fill="sepi" aria-pressed="false">Sepi · 2</button>
+      <button class="seg" data-fill="kosong" aria-pressed="false">Kosong</button>
+    </fieldset>
+  </div>
+
+  <div class="variants">
+    <section class="variant" aria-label="Varian A">
+      <div class="variant-head">
+        <p class="variant-name">A · Fokus hari ini <span class="badge">Rekomendasi</span></p>
+        <p class="variant-desc">Blok tanggal besar + item berikutnya disorot. Orang langsung tahu <i>hari apa ini</i> dan <i>apa yang selanjutnya</i> tanpa membaca semua baris.</p>
+      </div>
+      <div class="phone wall-dark js-phone">
+        <p class="phone-label">Notedwork · varian A</p>
+        <div class="wa js-widget" data-variant="a">
+          <div class="wa-top">
+            <div class="wa-date"><b>29</b><span>SEL</span></div>
+            <div class="wa-title"><b>Hari ini</b><span class="js-sub">Sel, 29 Sep · 5 agenda</span></div>
+            <span class="wa-count js-count">5</span>
+            <button class="wa-add" tabindex="-1" aria-hidden="true">+</button>
+          </div>
+          <div class="wa-rows js-rows"></div>
+          <div class="wa-empty js-empty" hidden>Belum ada agenda hari ini.<br>Nikmati harimu.</div>
+          <div class="wa-foot">NOTEDWORK</div>
+        </div>
+        <div class="dock" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="delta"><b>Yang berubah:</b> tambah blok tanggal (<code>w_date</code>), pil hitung (<code>w_count</code>), sorotan item berikutnya (<code>w_row{n}_card</code> beri background <code>@drawable/widget_next_bg</code>). <b>Tetap:</b> id <code>w_header, w_add, w_empty, w_row{n}_color/time/title</code> — Kotlin hampir tak berubah.</div>
+    </section>
+
+    <section class="variant" aria-label="Varian B">
+      <div class="variant-head">
+        <p class="variant-name">B · Linimasa terang <span class="badge ghost">Terang</span></p>
+        <p class="variant-desc">Untuk wallpaper terang. Rel garis waktu di kiri mengubah daftar jadi cerita satu hari: pagi → malam terbaca sekilas.</p>
+      </div>
+      <div class="phone wall-dark js-phone">
+        <p class="phone-label">Notedwork · varian B</p>
+        <div class="wb js-widget" data-variant="b">
+          <div class="wb-top"><b>Agenda hari ini</b><span class="js-sub">Sel, 29 Sep</span><button class="wb-add" tabindex="-1" aria-hidden="true">+</button></div>
+          <div class="wb-rows js-rows"></div>
+          <div class="wb-empty js-empty" hidden>Hari kosong — tambah jadwal pertama.</div>
+          <div class="wb-foot">NOTEDWORK · SEL 29 SEP</div>
+        </div>
+        <div class="dock" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="delta"><b>Yang berubah:</b> kartu terang (<code>@drawable/widget_bg_light</code>), rel garis (<code>View</code> 2dp <code>#E8E1D4</code>), sub-judul tiap baris (<code>w_row{n}_sub</code>: “Rutin · 07.30–09.00”). Butuh field <code>end</code> + <code>kind</code> dari payload — sudah ada di JSON.</div>
+    </section>
+
+    <section class="variant" aria-label="Varian C">
+      <div class="variant-head">
+        <p class="variant-name">C · Ringkas padat <span class="badge ghost">Kompak</span></p>
+        <p class="variant-desc">Terkecil dari ketiganya. Bilah warna di kiri + label jenis (RUTIN/JADWAL/TUGAS) menggantikan titik — muat di widget 2×2.</p>
+      </div>
+      <div class="phone wall-dark js-phone">
+        <p class="phone-label">Notedwork · varian C</p>
+        <div class="wc js-widget" data-variant="c">
+          <div class="wc-top"><b class="js-sub">Sel 29 · 5 agenda</b><button class="wc-add" tabindex="-1" aria-hidden="true">+</button></div>
+          <div class="wc-rows js-rows"></div>
+          <div class="wc-empty js-empty" hidden>Kosong — tekan + untuk menambah.</div>
+          <div class="wc-foot">NOTEDWORK</div>
+        </div>
+        <div class="dock" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="delta"><b>Yang berubah:</b> titik → bilah 3dp (<code>w_row{n}_bar</code>), tambah label jenis (<code>w_row{n}_tag</code>). Paling hemat tinggi: ±110dp untuk 3 baris, cocok untuk <code>minHeight</code> sekarang.</div>
+    </section>
+
+    <section class="variant" aria-label="Varian D">
+      <div class="variant-head">
+        <p class="variant-name">D · Kartu kertas <span class="badge ghost">Editorial</span></p>
+        <p class="variant-desc">Widget yang terlihat seperti sobekan jurnal kuliah: strip warna di atas, nomor urut tiap baris. Paling beda dari widget aplikasi lain — cocok dengan jiwa catatan Notedwork.</p>
+      </div>
+      <div class="phone wall-dark js-phone">
+        <p class="phone-label">Notedwork · varian D</p>
+        <div class="wd js-widget" data-variant="d">
+          <div class="wd-rule"></div>
+          <div class="wd-body">
+            <div class="wd-kicker">JURNAL HARI INI</div>
+            <div class="wd-title"><b>Selasa, 29 Sep</b><button class="wd-add" tabindex="-1" aria-hidden="true">+</button></div>
+            <div class="wd-rows js-rows"></div>
+            <div class="wd-empty js-empty" hidden>Halaman kosong.<br>Isi dengan satu jadwal pertama.</div>
+            <div class="wd-foot">— NOTEDWORK —</div>
+          </div>
+        </div>
+        <div class="dock" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="delta"><b>Yang berubah:</b> strip warna atas (4 <code>View</code> 1dp berdampingan), nomor urut <code>w_row{n}_num</code> (“01”–“05”), sudut nyaris siku 6dp. <b>Catatan:</b> strip multi-warna statis di XML — tidak perlu logika Kotlin tambahan.</div>
+    </section>
+
+    <section class="variant" aria-label="Varian E">
+      <div class="variant-head">
+        <p class="variant-name">E · Sinyal berikutnya <span class="badge ghost">Now / next</span></p>
+        <p class="variant-desc">Satu pertanyaan yang dijawab: <i>sekarang apa, lalu apa?</i> Item terdekat tampil besar seperti “sedang berjalan”, sisanya mengecil. Paling glancable dari kejauhan.</p>
+      </div>
+      <div class="phone wall-dark js-phone">
+        <p class="phone-label">Notedwork · varian E</p>
+        <div class="we js-widget" data-variant="e">
+          <div class="we-top"><div class="we-live"><i></i>SEDANG BERJALAN</div><span class="sp"></span><button class="we-add" tabindex="-1" aria-hidden="true">+</button></div>
+          <div class="we-now js-now"></div>
+          <div class="we-next js-rows"></div>
+          <div class="we-more js-more" hidden></div>
+          <div class="we-empty js-empty" hidden>Tidak ada agenda tersisa hari ini.<br>Besok mulai lagi.</div>
+          <div class="we-foot">NOTEDWORK</div>
+        </div>
+        <div class="dock" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="delta"><b>Yang berubah:</b> kartu hero <code>w_now_card</code> (jam besar + judul) + maksimal 2 baris kecil + teks “+2 lainnya” (<code>w_more</code>). <b>Butuh:</b> Kotlin tahu item mana yang terdekat — bandingkan jam item dengan jam sekarang di <code>onUpdate</code>.</div>
+    </section>
+
+    <section class="variant" aria-label="Varian F">
+      <div class="variant-head">
+        <p class="variant-name">F · Papan tulis <span class="badge ghost">Hangat</span></p>
+        <p class="variant-desc">Nuansa kapur di papan tulis: tanggal dalam kotak kapur, pemisah garis putus-putus, lingkaran ceklis tiap baris. Ramah dan manusiawi, tetap gelap agar hemat baterai.</p>
+      </div>
+      <div class="phone wall-dark js-phone">
+        <p class="phone-label">Notedwork · varian F</p>
+        <div class="wf js-widget" data-variant="f">
+          <div class="wf-top">
+            <div class="wf-chalk"><b>29</b>SEL</div>
+            <div class="wf-head"><b class="js-sub">5 agenda hari ini</b><span>Ketuk judul untuk membuka</span></div>
+            <button class="wf-add" tabindex="-1" aria-hidden="true">+</button>
+          </div>
+          <div class="wf-rows js-rows"></div>
+          <div class="wf-empty js-empty" hidden>Papan bersih.<br>Tambah coretan pertama.</div>
+          <div class="wf-foot">NOTEDWORK</div>
+        </div>
+        <div class="dock" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="delta"><b>Yang berubah:</b> kotak tanggal kapur (<code>w_date</code> dengan <code>@drawable/widget_chalk_bg</code>), pemisah <code>dashed_line.xml</code>, lingkaran ceklis <code>w_row{n}_check</code> (statis — widget tak bisa toggle, hanya dekorasi). Nol logika Kotlin baru.</div>
+    </section>
+  </div>
+
+  <section class="spec" aria-label="Batasan teknis">
+    <h2>Batasan RemoteViews yang dihormati</h2>
+    <ul>
+      <li>Semua varian hanya pakai <b>LinearLayout + TextView + ImageView + View</b> — tidak ada custom view, tidak ada blur/shadow.</li>
+      <li>Font di widget asli Android adalah <b>font sistem</b> (Poppins/JetBrains Mono di mockup ini hanya pendekatan visual).</li>
+      <li>Sudut membulat &amp; pil lewat <b>shape drawable XML</b>; warna dot tetap via <code>setColorFilter</code> seperti sekarang.</li>
+      <li>Kontrak id lama (<code>w_header, w_add, w_empty, w_row{n}_*</code>) dipertahankan — provider Kotlin hanya tambah id baru, tak perlu tulis ulang.</li>
+    </ul>
+    <small>Contoh data: 07.30 Algoritma (rutin), 10.00 Bimbingan skripsi (jadwal), 13.00 Basis Data (rutin), 16.00 Kumpul tugas Struktur Data (tugas), 19.00 Rapat himpunan (jadwal).</small>
+  </section>
+
+  <section class="impl" aria-label="Langkah implementasi">
+    <h2>Kalau sudah pilih, implementasinya</h2>
+    <ol>
+      <li>Duplikat <code>widget_agenda.xml</code> → layout varian terpilih (id lama dipertahankan).</li>
+      <li>Tambah drawable: <code>widget_next_bg.xml</code> (A) / <code>widget_bg_light.xml</code> (B) / reuse <code>widget_dot.xml</code> sebagai bilah (C).</li>
+      <li>Update <code>AgendaWidgetProvider.kt</code>: isi <code>w_count/w_date/w_row{n}_sub|tag</code>, sorot baris pertama.</li>
+      <li>Opsional: kecilkan horizon payload 8 hari → 1 hari (Kotlin selama ini memfilter ulang hanya hari ini).</li>
+    </ol>
+  </section>
+
+  <footer class="note">Mockup ini pratinjau visual saja — belum mengubah kode. Balas dengan “A”–“F” (mis. “D”, atau “mix E+A”) dan saya implementasikan ke XML + Kotlin + tes payload.</footer>
+</div>
+
+<script>
+(function(){
+  var DATA = {
+    rame: [
+      {time:'07.30', end:'09.00', title:'Algoritma · IF-2A', color:'#16A34A', kind:'RUTIN'},
+      {time:'10.00', end:'11.00', title:'Bimbingan skripsi', color:'#D97706', kind:'JADWAL'},
+      {time:'13.00', end:'14.30', title:'Basis Data · Lab 3', color:'#7C5CFF', kind:'RUTIN'},
+      {time:'16.00', end:'', title:'Kumpul tugas Struktur Data', color:'#DC2626', kind:'TUGAS'},
+      {time:'19.00', end:'20.30', title:'Rapat himpunan', color:'#D97706', kind:'JADWAL'}
+    ],
+    sepi: [
+      {time:'10.00', end:'11.00', title:'Bimbingan skripsi', color:'#D97706', kind:'JADWAL'},
+      {time:'19.00', end:'20.30', title:'Rapat himpunan', color:'#D97706', kind:'JADWAL'}
+    ],
+    kosong: []
+  };
+  var KIND_BG = {RUTIN:'rgba(22,163,74,.16)', JADWAL:'rgba(217,119,6,.16)', TUGAS:'rgba(220,38,38,.16)'};
+  var KIND_TX = {RUTIN:'#16A34A', JADWAL:'#D97706', TUGAS:'#DC2626'};
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+  function render(){
+    var fill = document.body.dataset.fill || 'rame';
+    var items = DATA[fill] || [];
+    document.querySelectorAll('.js-widget').forEach(function(w){
+      var v = w.dataset.variant;
+      var rows = w.querySelector('.js-rows');
+      var empty = w.querySelector('.js-empty');
+      rows.innerHTML = '';
+      empty.hidden = items.length > 0;
+      items.slice(0,5).forEach(function(it, i){
+        var div = document.createElement('div');
+        if(v === 'a'){
+          div.className = 'wa-row' + (i === 0 ? ' next' : '');
+          div.innerHTML = '<span class="wa-dot" style="background:'+it.color+'"></span>' +
+            '<span class="wa-time">'+esc(it.time)+'</span>' +
+            '<span class="wa-task">'+esc(it.title)+'</span>' +
+            '<span class="wa-kind">'+it.kind+'</span>';
+        }else if(v === 'b'){
+          div.className = 'wb-row';
+          var sub = it.kind.charAt(0) + it.kind.slice(1).toLowerCase() + ' · ' + it.time + (it.end ? '–' + it.end : '');
+          div.innerHTML = '<span class="wb-dot" style="color:'+it.color+';background:'+it.color+'"></span>' +
+            '<span class="wb-time" style="color:'+it.color+'">'+esc(it.time)+'</span>' +
+            '<span class="wb-task"><b>'+esc(it.title)+'</b><span>'+esc(sub)+'</span></span>';
+        }else if(v === 'd'){
+          div.className = 'wd-row';
+          div.innerHTML = '<span class="wd-num">0'+(i+1)+'</span>' +
+            '<span class="wd-task">'+esc(it.title)+'</span>' +
+            '<span class="wd-meta">'+esc(it.time)+'</span>';
+        }else if(v === 'e'){
+          return; // E di-render khusus di bawah (now + next)
+        }else if(v === 'f'){
+          div.className = 'wf-row';
+          div.innerHTML = '<span class="wf-check"></span>' +
+            '<span class="wf-task">'+esc(it.title)+'<small>'+esc(it.kind.charAt(0)+it.kind.slice(1).toLowerCase()+' · s.d. '+(it.end || it.time))+'</small></span>' +
+            '<span class="wf-time">'+esc(it.time)+'</span>';
+        }else{
+          div.className = 'wc-row';
+          div.innerHTML = '<span class="wc-bar" style="background:'+it.color+'"></span>' +
+            '<span class="wc-time">'+esc(it.time)+'</span>' +
+            '<span class="wc-task">'+esc(it.title)+'</span>' +
+            '<span class="wc-tag" style="background:'+KIND_BG[it.kind]+';color:'+KIND_TX[it.kind]+'">'+it.kind+'</span>';
+        }
+        rows.appendChild(div);
+      });
+      var sub = w.querySelector('.js-sub');
+      if(sub){
+        if(v === 'a') sub.textContent = 'Sel, 29 Sep · ' + (items.length ? items.length + ' agenda' : 'kosong');
+        else if(v === 'b') sub.textContent = 'Sel, 29 Sep' + (items.length ? ' · ' + items.length + ' agenda' : '');
+        else if(v === 'f') sub.textContent = items.length ? items.length + ' agenda hari ini' : 'Papan bersih';
+        else sub.textContent = 'Sel 29 · ' + (items.length ? items.length + ' agenda' : 'kosong');
+      }
+      var count = w.querySelector('.js-count');
+      if(count) count.textContent = String(items.length);
+      // Varian E: baris pertama jadi kartu "now", sisanya maks 2 + "+n lainnya"
+      if(v === 'e'){
+        var nowBox = w.querySelector('.js-now');
+        var more = w.querySelector('.js-more');
+        nowBox.innerHTML = '';
+        if(items.length){
+          var first = items[0];
+          nowBox.innerHTML = '<span class="we-time">'+esc(first.time)+'</span>' +
+            '<span class="we-task"><b>'+esc(first.title)+'</b><span>'+esc(first.kind.charAt(0)+first.kind.slice(1).toLowerCase()+(first.end ? ' · s.d. '+first.end : ''))+'</span></span>';
+          var rest = items.slice(1, 3);
+          rest.forEach(function(it){
+            var r = document.createElement('div');
+            r.className = 'we-row';
+            r.innerHTML = '<span class="we-time">'+esc(it.time)+'</span>' +
+              '<span class="we-task">'+esc(it.title)+'</span>';
+            rows.appendChild(r);
+          });
+          if(items.length > 3){ more.hidden = false; more.textContent = '+' + (items.length - 3) + ' lainnya'; }
+          else more.hidden = true;
+        }
+      }
+    });
+  }
+  document.body.dataset.fill = 'rame';
+  document.querySelectorAll('[data-wall]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('[data-wall]').forEach(function(b){b.setAttribute('aria-pressed','false');});
+      btn.setAttribute('aria-pressed','true');
+      document.querySelectorAll('.js-phone').forEach(function(p){
+        p.classList.remove('wall-dark','wall-light','wall-foto');
+        p.classList.add(btn.dataset.wall);
+      });
+    });
+  });
+  document.querySelectorAll('[data-fill]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('[data-fill]').forEach(function(b){b.setAttribute('aria-pressed','false');});
+      btn.setAttribute('aria-pressed','true');
+      document.body.dataset.fill = btn.dataset.fill;
+      render();
+    });
+  });
+  render();
+})();
+</script>

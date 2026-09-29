@@ -42,6 +42,23 @@ class AgendaWidgetProvider : HomeWidgetProvider() {
             R.id.w_row3_title,
             R.id.w_row4_title,
         )
+    private val kindIds =
+        intArrayOf(
+            R.id.w_row0_kind,
+            R.id.w_row1_kind,
+            R.id.w_row2_kind,
+            R.id.w_row3_kind,
+            R.id.w_row4_kind,
+        )
+
+    // ponytail: tanpa filter lewat — cukup untuk agenda. Upgrade: kirim flag
+    // "isNext" dari Dart bila sorotan harus berbasis jam aktual, bukan urutan.
+    data class AgendaRow(
+        val kind: String,
+        val color: String,
+        val time: String,
+        val title: String,
+    )
 
     override fun onUpdate(
         context: Context,
@@ -61,29 +78,47 @@ class AgendaWidgetProvider : HomeWidgetProvider() {
 
         var header = ""
         var emptyText = ""
-        val rows = ArrayList<Triple<String, String, String>>() // color, time, title
+        var dateNum = ""
+        var dateDow = ""
+        var sub = ""
+        var count = ""
+        var labelRutin = "RUTIN"
+        var labelJadwal = "JADWAL"
+        var labelTugas = "TUGAS"
+        val rows = ArrayList<AgendaRow>()
         try {
             val payloadRaw = widgetData.getString(PAYLOAD_KEY, null)
             if (payloadRaw != null) {
                 val json = JSONObject(payloadRaw)
                 header = json.optString("header", "Hari Ini")
                 emptyText = json.optString("empty", "")
+                dateNum = json.optString("dateNum", "")
+                dateDow = json.optString("dateDow", "")
+                sub = json.optString("sub", "")
+                count = json.optString("count", "")
+                val labels = json.optJSONObject("labels")
+                if (labels != null) {
+                    labelRutin = labels.optString("rutin", labelRutin)
+                    labelJadwal = labels.optString("jadwal", labelJadwal)
+                    labelTugas = labels.optString("tugas", labelTugas)
+                }
                 val items = json.getJSONArray("items")
                 for (i in 0 until items.length()) {
                     val item = items.getJSONObject(i)
                     val matches =
                         when (item.optString("kind")) {
-                            "routine" -> item.optInt("day", -1) == todayIso
+                            "rutin" -> item.optInt("day", -1) == todayIso
                             else -> item.optString("date") == today
                         }
                     if (!matches) continue
                     val title = item.optString("title", "")
                     if (title.isEmpty()) continue
                     rows.add(
-                        Triple(
-                            item.optString("color", "#D97706"),
-                            item.optString("time", ""),
-                            title,
+                        AgendaRow(
+                            kind = item.optString("kind", ""),
+                            color = item.optString("color", "#D97706"),
+                            time = item.optString("time", ""),
+                            title = title,
                         ),
                     )
                     if (rows.size == MAX_ROWS) break
@@ -95,6 +130,9 @@ class AgendaWidgetProvider : HomeWidgetProvider() {
         }
         if (header.isEmpty()) header = DEFAULT_HEADER
         if (rows.isEmpty() && emptyText.isEmpty()) emptyText = DEFAULT_EMPTY
+        // Fallback tanggal dari device bila payload lama (tanpa dateNum/dateDow)
+        if (dateNum.isEmpty()) dateNum = calendar.get(Calendar.DAY_OF_MONTH).toString()
+        if (dateDow.isEmpty()) dateDow = DEFAULT_HEADER.take(3).uppercase()
 
         val addIntent =
             HomeWidgetLaunchIntent.getActivity(
@@ -114,6 +152,18 @@ class AgendaWidgetProvider : HomeWidgetProvider() {
                 RemoteViews(context.packageName, R.layout.widget_agenda).apply {
                     setTextViewText(R.id.w_header, header)
                     setOnClickPendingIntent(R.id.w_header, openIntent)
+                    setTextViewText(R.id.w_date_num, dateNum)
+                    setTextViewText(R.id.w_date_dow, dateDow)
+                    setTextViewText(R.id.w_sub, sub)
+                    setViewVisibility(
+                        R.id.w_sub,
+                        if (sub.isEmpty()) View.GONE else View.VISIBLE,
+                    )
+                    setTextViewText(R.id.w_count, count)
+                    setViewVisibility(
+                        R.id.w_count,
+                        if (count.isEmpty()) View.GONE else View.VISIBLE,
+                    )
                     setOnClickPendingIntent(R.id.w_add, addIntent)
                     if (rows.isEmpty()) {
                         setViewVisibility(R.id.w_empty, View.VISIBLE)
@@ -123,20 +173,39 @@ class AgendaWidgetProvider : HomeWidgetProvider() {
                     }
                     for (n in 0 until MAX_ROWS) {
                         if (n < rows.size) {
-                            val (color, time, title) = rows[n]
+                            val row = rows[n]
                             setViewVisibility(rowIds[n], View.VISIBLE)
+                            // Baris pertama = agenda berikutnya -> sorot.
+                            setInt(
+                                rowIds[n],
+                                "setBackgroundResource",
+                                if (n == 0) R.drawable.widget_next_bg
+                                else R.drawable.widget_row_plain,
+                            )
                             try {
-                                setInt(colorIds[n], "setColorFilter", Color.parseColor(color))
+                                setInt(colorIds[n], "setColorFilter", Color.parseColor(row.color))
                             } catch (_: IllegalArgumentException) {
                                 // warna tidak valid -> pakai warna bawaan dot
                             }
-                            setTextViewText(timeIds[n], time)
+                            setTextViewText(timeIds[n], row.time)
                             setViewVisibility(
                                 timeIds[n],
-                                if (time.isEmpty()) View.GONE else View.VISIBLE,
+                                if (row.time.isEmpty()) View.GONE else View.VISIBLE,
                             )
-                            setTextViewText(titleIds[n], title)
+                            setTextViewText(titleIds[n], row.title)
                             setOnClickPendingIntent(titleIds[n], openIntent)
+                            val kindLabel =
+                                when (row.kind) {
+                                    "rutin" -> labelRutin
+                                    "jadwal" -> labelJadwal
+                                    "tugas" -> labelTugas
+                                    else -> ""
+                                }
+                            setTextViewText(kindIds[n], kindLabel)
+                            setViewVisibility(
+                                kindIds[n],
+                                if (kindLabel.isEmpty()) View.GONE else View.VISIBLE,
+                            )
                         } else {
                             setViewVisibility(rowIds[n], View.GONE)
                         }

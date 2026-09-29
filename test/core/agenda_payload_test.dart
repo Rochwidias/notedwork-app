@@ -22,13 +22,28 @@ void main() {
   String run({List<Sched> scheds = const [], List<Routine> routines = const [],
           List<Task> tasks = const []}) =>
       buildAgendaPayload(scheds: scheds, routines: routines, tasks: tasks, now: now,
-          header: 'Hari Ini · Sen, 28 Sep 2026', emptyText: 'Belum ada agenda hari ini');
+          header: 'Hari Ini · Sen, 28 Sep 2026', emptyText: 'Belum ada agenda hari ini',
+          dateNum: '28', dateDow: 'SEN', sub: 'Senin, 28 September',
+          count: '3', routineLabel: 'RUTIN', schedLabel: 'AGENDA',
+          taskLabel: 'TUGAS');
 
   test('payload JSON valid, berisi header + empty + items', () {
     final map = jsonDecode(run()) as Map<String, dynamic>;
     expect(map['header'], 'Hari Ini · Sen, 28 Sep 2026');
     expect(map['empty'], 'Belum ada agenda hari ini');
     expect(map['items'], isA<List<dynamic>>());
+  });
+
+  test('payload varian A membawa dateNum/dateDow/sub/count/labels', () {
+    final map = jsonDecode(run()) as Map<String, dynamic>;
+    expect(map['dateNum'], '28');
+    expect(map['dateDow'], 'SEN');
+    expect(map['sub'], 'Senin, 28 September');
+    expect(map['count'], '3');
+    final labels = map['labels'] as Map<String, dynamic>;
+    expect(labels['rutin'], 'RUTIN');
+    expect(labels['jadwal'], 'AGENDA');
+    expect(labels['tugas'], 'TUGAS');
   });
 
   test('sched hari ini ikut; lewat horizon 7 hari tidak; kemarin tidak', () {
@@ -50,11 +65,11 @@ void main() {
     expect((map['items'] as List).length, 1);
   });
 
-  test('rutin selalu ikut dengan field day ISO (Senin=1)', () {
+  test('rutin memakai kind jadwal/rutin/tugas lokal (Senin=1)', () {
     final map = jsonDecode(run(routines: [routine(day: 1)])) as Map<String, dynamic>;
     final items = (map['items'] as List);
     expect(items.length, 1);
-    expect(items.first['kind'], 'routine');
+    expect(items.first['kind'], 'rutin');
     expect(items.first['day'], 1);
     expect(items.first['date'], isNull);
   });
@@ -69,18 +84,24 @@ void main() {
     expect(items.length, 1);
     expect(items.first['title'], 'Aktif');
     expect(items.first['time'], '23:59');
-    expect(items.first['kind'], 'task');
+    expect(items.first['kind'], 'tugas');
     expect(items.first['color'], '#DC2626');
   });
 
-  test('urutan grup: routine -> sched -> task', () {
+  test('sched memakai kind jadwal (bukan sched)', () {
+    final map = jsonDecode(run(scheds: [sched(title: 'X', date: '2026-09-28')]))
+        as Map<String, dynamic>;
+    expect((map['items'] as List).first['kind'], 'jadwal');
+  });
+
+  test('urutan grup: rutin -> jadwal -> tugas', () {
     final map = jsonDecode(run(
       tasks: [task(title: 'Tugas', date: '2026-09-28', time: '01:00')],
       scheds: [sched(title: 'Agenda', date: '2026-09-28', time: '02:00')],
       routines: [routine(day: 1, start: '23:00', end: '23:59')],
     )) as Map<String, dynamic>;
     final kinds = (map['items'] as List).map((e) => e['kind']).toList();
-    expect(kinds, ['routine', 'sched', 'task']);
+    expect(kinds, ['rutin', 'jadwal', 'tugas']);
   });
 
   test('data kosong -> items [] (provider tampilkan emptyText)', () {

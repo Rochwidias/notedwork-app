@@ -11,6 +11,13 @@ String buildAgendaPayload({
   required DateTime now,
   required String header,
   required String emptyText,
+  required String dateNum,
+  required String dateDow,
+  required String sub,
+  required String count,
+  required String routineLabel,
+  required String schedLabel,
+  required String taskLabel,
 }) {
   // yyyy-MM-dd lokal; todayStr() di dates.dart tanpa argumen, jadi helper sendiri.
   String iso(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
@@ -23,7 +30,7 @@ String buildAgendaPayload({
 
   // 1) Rutin mingguan (selalu ikut; provider mencocokkan hari)
   for (final r in routines) {
-    items.add({'kind': 'routine', 'day': r.day, 'time': r.start, 'end': r.end,
+    items.add({'kind': 'rutin', 'day': r.day, 'time': r.start, 'end': r.end,
       'title': r.course, 'color': r.color.isEmpty ? '#D97706' : r.color});
   }
   // 2) Sched: hari ini s/d +7 (kemarin terbuang oleh perbandingan)
@@ -31,7 +38,7 @@ String buildAgendaPayload({
   for (final s in schedsSorted) {
     if (s.date.compareTo(today) < 0) continue;
     if (s.date.compareTo(horizon) > 0) continue;
-    items.add({'kind': 'sched', 'date': s.date,
+    items.add({'kind': 'jadwal', 'date': s.date,
       'time': (s.allDay ?? false) ? '' : s.time, 'title': s.title,
       'color': s.color.isEmpty ? '#D97706' : s.color});
   }
@@ -41,10 +48,19 @@ String buildAgendaPayload({
     if (t.done) continue;
     if (t.date.compareTo(today) < 0) continue;
     if (t.date.compareTo(horizon) > 0) continue;
-    items.add({'kind': 'task', 'date': t.date,
+    items.add({'kind': 'tugas', 'date': t.date,
       'time': (t.time.isEmpty ? '23:59' : t.time), 'title': t.title,
       'color': taskColor});
   }
 
-  return jsonEncode({'header': header, 'empty': emptyText, 'items': items});
+  return jsonEncode({
+    'header': header,
+    'empty': emptyText,
+    'dateNum': dateNum,
+    'dateDow': dateDow,
+    'sub': sub,
+    'count': count,
+    'labels': {'rutin': routineLabel, 'jadwal': schedLabel, 'tugas': taskLabel},
+    'items': items,
+  });
 }

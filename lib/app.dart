@@ -95,15 +95,28 @@ class _NotedworkAppState extends ConsumerState<NotedworkApp> {
     if (ctx == null || !mounted) return;
     final l10n = AppLocalizations.of(ctx);
     final lang = ref.read(settingsProvider).lang;
+    final now = DateTime.now();
+    final parsed = DateTime.tryParse(todayStr());
+    final weekday = (parsed?.weekday ?? now.weekday) - 1; // Senin=0..Minggu=6
+    final dayName = dayNames(lang)[weekday];
+    final monthName = monthNames(lang)[now.month - 1];
+    final dowShort = dow3(lang)[weekday].toUpperCase();
     AgendaWidgetBridge.update(
       scheds: ref.read(schedsProvider),
       routines: ref.read(routinesProvider),
       tasks: ref.read(tasksProvider),
-      now: DateTime.now(),
+      now: now,
       header: '${l10n.nav_home} · ${fmtDateID(todayStr(), lang)}',
       emptyText: lang == Lang.id
           ? 'Belum ada agenda hari ini'
           : 'No agenda for today yet',
+      dateNum: '${now.day}',
+      dateDow: dowShort,
+      sub: '$dayName, ${now.day} $monthName',
+      count: '${ref.read(reminderItemsProvider).length}',
+      routineLabel: l10n.cal_routine.toUpperCase(),
+      schedLabel: l10n.cal_agenda.toUpperCase(),
+      taskLabel: l10n.tasks_title.toUpperCase(),
     );
   }
 
